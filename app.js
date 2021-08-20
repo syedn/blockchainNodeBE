@@ -9,16 +9,15 @@ var isoCountryCurrency = require('iso-country-currency');
 var crypto = require('crypto');
 var BlockchainComExchangeRestApi = require('blockchain_com_exchange_rest_api');
 
-var swap = require('node-currency-swap');
- 
-// Add the OpenExchangeRates provider (get appId from OpenExchangeRates)
-swap.addProvider(new swap.providers.OpenExchangeRates({appId: 'aa2cce6dba774cc88f667228f2b988db'}));
+const CC = require('currency-converter-lt');
 
+//var swap = require('node-currency-swap');
+ 
           
 //initialize variables
 var port = process.env.PORT || 3000;    
 var app = express();
-var users = [  
+var users = [         
 {   
 	id: 1,
 	name: 'Jhon Doe',
@@ -30,20 +29,20 @@ var users = [
 	id: 2,
 	name: 'Rita Jack',
 	userEmail: 'ritajack@gmail.com',
-	userPassword: 'XunTpzbZ6GQs6+8W8GX/DHi7MpqaN8peDJP8UF/otdE=', //@todo: change hashes for these passwords, ritaPassword
+	userPassword: 'PExy2xo0ma7T1idHQ8QLoSgrtQtRR9K4pTFr+mkE81Q=', //ritaPassword
 	country: 'Germany' //country for local currency, registeration
 },
 {
 	id: 3,
 	name: 'Mohammad Ameen',
 	userEmail: 'mameen@gmail.com',
-	userPassword: 'XunTpzbZ6GQs6+8W8GX/DHi7MpqaN8peDJP8UF/otdE=', //ameenPassword
+	userPassword: 'H4yOjn3iCrH4megWDSYPtM6UTtTxPi2T1Cntd8wlTVI=', //ameenPassword
 	country: 'Pakistan' //country for local currency, registeration
 }
 ];
-  
+    
 
-//@remove 
+//@remove        
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -83,12 +82,6 @@ const authMiddleware = (req, res, next) => {
     }
 }
 
-const convertCurrency = (currencyTo, currencyValue) => {
-	
-	var rate = swap.quoteSync({currency: 'USD/'+currencyTo}); 
-	
-	return currencyValue*rate[0].value;
-}
 
 //Get the user's 'authToken' and 'UserInfo' token from cookies and inject in the request 
 app.use((req, res, next) => {
@@ -108,6 +101,8 @@ app.post('/api/login', (req, res)=>{
 	
 	let {userEmail, userPassword} = req.body;
 	let userHashedpassword = getHashedPassword(userPassword); // convert password to hash
+	console.log("hash")
+	console.log(userHashedpassword)
 	
 	let user = users.find(u => u.userEmail === userEmail && u.userPassword === userHashedpassword); 
 	
@@ -167,25 +162,38 @@ app.get('/api/cryptocurrencies', function(req, res){
 		  if (error) {
 			console.error(error);
 		  } else {
-			  
-			data.forEach(function(item, index){
-				cryptoSymbol = data[index].symbol; //get currency conversion symbol
-				cryptoC = cryptoSymbol.split('-'); 
-				if(cryptoC[1] === 'USD'){ //get prices of all crypto currencies in USD
-					
-					let {currency, currencySymbol} = countryLocalCurrency(req.user.country);
-	
-					cryptoCurrencies.push({
-						cryptoCurrency: cryptoC[0], 
-						price_24h: convertCurrency(currency, data[index].price_24h) || data[index].price_24h, 
-						volume_24h: data[index].volume_24h,
-						last_trade_price: convertCurrency(currency, data[index].last_trade_price)  ||  data[index].last_trade_price
-						}); 
-					
-				}   
-			} );        
+								
+			let {currency, currencySymbol} = countryLocalCurrency(req.user.country);
+										
+			let currencyConverter = new CC({from:"USD", to:currency, amount:1});
 			
-			res.send({cryptoData: cryptoCurrencies});  
+			
+			currencyConverter.convert().then((response) => { //convert the crypto currency's price to the local currency of user
+								console.log("try currency converter "+currency)
+								console.log(response) //USD rate
+								let rateUSD = response; 
+								
+								data.forEach(function(item, index){
+										cryptoSymbol = data[index].symbol; //get currency conversion symbol
+										cryptoC = cryptoSymbol.split('-'); 
+										
+										if(cryptoC[1] === 'USD'){ //get prices of all crypto currencies in USD
+											
+											cryptoCurrencies.push({
+												cryptoCurrency: cryptoC[0], 
+												price_24h:  rateUSD*data[index].price_24h || data[index].price_24h, //convert to local currency
+												volume_24h: data[index].volume_24h,
+												last_trade_price: rateUSD*data[index].last_trade_price || data[index].last_trade_price //convert to local currency
+												}); 
+											
+										}   
+									} ); 
+									
+									console.log("after converter")
+									res.send({cryptoData: cryptoCurrencies});  
+							});
+							
+							   
 		  }
 		});
 	
