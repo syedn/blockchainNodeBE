@@ -1,0 +1,214 @@
+'use strict';
+var createError = require('http-errors');
+var express = require('express');
+var path = require('path');
+var cookieParser = require('cookie-parser');
+//var logger = require('morgan');
+var bodyParser = require('body-parser');
+var isoCountryCurrency = require('iso-country-currency');
+var crypto = require('crypto');
+var BlockchainComExchangeRestApi = require('blockchain_com_exchange_rest_api');
+
+var swap = require('node-currency-swap');
+ 
+// Add the OpenExchangeRates provider (get appId from OpenExchangeRates)
+swap.addProvider(new swap.providers.OpenExchangeRates({appId: 'aa2cce6dba774cc88f667228f2b988db'}));
+
+          
+//initialize variables
+var port = process.env.PORT || 3000;    
+var app = express();
+var users = [  
+{   
+	id: 1,
+	name: 'Jhon Doe',
+	userEmail: 'jhondoe@gmail.com', //unique emails
+	userPassword: 'XunTpzbZ6GQs6+8W8GX/DHi7MpqaN8peDJP8UF/otdE=', //jhonPassword
+	country: 'Canada' //country for local currency, registeration
+},
+{
+	id: 2,
+	name: 'Rita Jack',
+	userEmail: 'ritajack@gmail.com',
+	userPassword: 'XunTpzbZ6GQs6+8W8GX/DHi7MpqaN8peDJP8UF/otdE=', //@todo: change hashes for these passwords, ritaPassword
+	country: 'Germany' //country for local currency, registeration
+},
+{
+	id: 3,
+	name: 'Mohammad Ameen',
+	userEmail: 'mameen@gmail.com',
+	userPassword: 'XunTpzbZ6GQs6+8W8GX/DHi7MpqaN8peDJP8UF/otdE=', //ameenPassword
+	country: 'Pakistan' //country for local currency, registeration
+}
+];
+  
+
+//@remove 
+// view engine setup
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'jade');
+
+//app.use(logger('dev')); //@todo: what is this?
+app.use(express.json());
+app.use(bodyParser.urlencoded({ extended: true }));  // to support URL-encoded bodies
+app.use(cookieParser());
+
+//// use in production 
+const publicRoot = '/Users/all/Desktop/blockchainProject/cryptoshowcasevue/dist' //@todo: change public root to dist of vue
+app.use(express.static(publicRoot))
+
+
+const getHashedPassword = (userPassword) => {
+    const sha256 = crypto.createHash('sha256');
+    const hash = sha256.update(userPassword).digest('base64');
+    return hash;
+}
+
+const countryLocalCurrency = (country) => {
+	let userCountryISO = isoCountryCurrency.getISOByParam('countryName', country);
+	let userCountryCurrency = isoCountryCurrency.getParamByISO(userCountryISO, 'currency');;
+	let userCountryCurrencySymbol = isoCountryCurrency.getParamByISO(userCountryISO, 'symbol');
+	return {currency: userCountryCurrency, currencySymbol: userCountryCurrencySymbol};
+}
+
+const generateAuthToken = () => {
+    return crypto.randomBytes(30).toString('hex');
+}
+
+const authMiddleware = (req, res, next) => {
+    if (!req.authToken) {
+        res.status(401).send('You are not authenticated')
+    } else {
+        return next()
+    }
+}
+
+const convertCurrency = (currencyTo, currencyValue) => {
+	
+	var rate = swap.quoteSync({currency: 'USD/'+currencyTo}); 
+	
+	return currencyValue*rate[0].value;
+}
+
+//Get the user's 'authToken' and 'UserInfo' token from cookies and inject in the request 
+app.use((req, res, next) => {
+    req.authToken = req.cookies['AuthToken'];
+    req.user = req.cookies['UserInfo'];
+
+    next();
+});
+
+
+// use in production 
+/*app.get("/", (req, res, next) => {
+  res.sendFile("index.html", { root: publicRoot })
+});
+*/
+app.post('/api/login', (req, res)=>{
+	
+	let {userEmail, userPassword} = req.body;
+	let userHashedpassword = getHashedPassword(userPassword); // convert password to hash
+	
+	let user = users.find(u => u.userEmail === userEmail && u.userPassword === userHashedpassword); 
+	
+	if(user){
+		let authToken = generateAuthToken();   
+		
+		// Setting the AuthToken and UserInfo in cookies
+        res.cookie('AuthToken', authToken);
+        res.cookie('UserInfo', user);
+		res.send("Logged in");
+	}
+	else{
+		return res.status(400).send([userEmail, " Invalid username or password. "])
+	}
+});
+
+app.get('/api/logout', function(req, res) {
+    let appCookies = req.cookies;
+    for (var prop in appCookies) {
+        if (!appCookies.hasOwnProperty(prop)) {
+            continue;
+        }    
+        res.cookie(prop, '', {expires: new Date(0)}); //set cookie to some old date
+    }
+	
+    return res.send("Logged out");
+});
+
+app.get("/api/user", authMiddleware, (req, res) => {
+	
+	let user = users.find(u => u.id === req.user.id);
+	 
+	let {currency, currencySymbol} = countryLocalCurrency(user.country); 
+	 
+	let userInfo = {...user, 'currency':currency, 'currencySymbol':currencySymbol}; 
+	delete userInfo.userPassword;
+	res.send({user: userInfo});  
+});  
+
+app.get('/api/cryptocurrencies', function(req, res){
+	
+	let defaultClient = BlockchainComExchangeRestApi.ApiClient.instance;
+	// Configure API key authorization: ApiKeyAuth
+	let ApiKeyAuth = defaultClient.authentications['ApiKeyAuth'];
+	ApiKeyAuth.apiKey = '8fa427c3-fb4e-4a99-8d9d-0d361f90501e';
+	//set a prefix for the API key, e.g. "Token" (defaults to null)
+	ApiKeyAuth.apiKeyPrefix = 'Token';
+	
+	
+	let apiInstance = new BlockchainComExchangeRestApi.UnauthenticatedApi();
+	
+	
+	var cryptoC, cryptoSymbol;
+	var cryptoCurrencies = [];
+	
+	apiInstance.getTickers((error, data, response) => {
+		  if (error) {
+			console.error(error);
+		  } else {
+			  
+			data.forEach(function(item, index){
+				cryptoSymbol = data[index].symbol; //get currency conversion symbol
+				cryptoC = cryptoSymbol.split('-'); 
+				if(cryptoC[1] === 'USD'){ //get prices of all crypto currencies in USD
+					
+					let {currency, currencySymbol} = countryLocalCurrency(req.user.country);
+	
+					cryptoCurrencies.push({
+						cryptoCurrency: cryptoC[0], 
+						price_24h: convertCurrency(currency, data[index].price_24h) || data[index].price_24h, 
+						volume_24h: data[index].volume_24h,
+						last_trade_price: convertCurrency(currency, data[index].last_trade_price)  ||  data[index].last_trade_price
+						}); 
+					
+				}   
+			} );        
+			
+			res.send({cryptoData: cryptoCurrencies});  
+		  }
+		});
+	
+});
+
+
+// catch 404 and forward to error handler
+app.use(function(req, res, next) {  
+  next(createError(404));
+});  
+
+// error handler
+app.use(function(err, req, res, next) {  
+  // set locals, only providing error in development
+  res.locals.message = err.message;
+  res.locals.error = req.app.get('env') === 'development' ? err : {};
+
+  // render the error page
+  res.status(err.status || 500);
+  res.render('error');
+});
+
+//create server 
+app.listen(port, function(){console.log("the server starts")});
+
+module.exports = app;

@@ -1,0 +1,50 @@
+{
+  "name": "cryptoshowcase",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Crypto Currency Dashboard",
+  "main": "app.js",
+  "scripts": {
+    "start": "node ./bin/www"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/syedn/cryptoShowCase.git"
+  },
+  "author": "Nazneen",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/syedn/cryptoShowCase/issues"
+  },
+  "homepage": "https://github.com/syedn/cryptoShowCase#readme",
+  "dependencies": {
+    "@wyster/node-currency-swap": "^1.0.6",
+    "blockchain.info": "^2.12.1",
+    "body-parser": "^1.19.0",
+    "cookie-parser": "^1.4.5",
+    "crypto": "^1.0.1",
+    "currencies-exchange-rates": "^1.0.2",
+    "debug": "~2.6.9",
+    "express": "^4.16.4",
+    "hbs": "^4.1.2",
+    "http-error": "0.0.6",
+    "http-errors": "^1.6.3",
+    "iso-country-currency": "^0.5.3",
+    "jade": "^1.11.0",
+    "node-currency-swap": "^1.0.6",
+    "request": "^2.88.2"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.12",
+    "webpack": "^5.50.0",
+    "webpack-cli": "^4.7.2"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "test/*",
+      "dist/*",
+      "views/*"
+    ],
+    "delay": 2500
+  }
+}
