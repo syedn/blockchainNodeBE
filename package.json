@@ -23,6 +23,7 @@
     "body-parser": "^1.19.0",
     "cookie-parser": "^1.4.5",
     "crypto": "^1.0.1",
+    "crypto-symbol": "^1.0.17",
     "currencies-exchange-rates": "^1.0.2",
     "currency-converter-lt": "^1.1.4",
     "debug": "~2.6.9",

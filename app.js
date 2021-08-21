@@ -8,6 +8,7 @@ var bodyParser = require('body-parser');
 var isoCountryCurrency = require('iso-country-currency');
 var crypto = require('crypto');
 var BlockchainComExchangeRestApi = require('blockchain_com_exchange_rest_api');
+var { nameOf, nameM, name } = require('crypto-symbol');
 
 const CC = require('currency-converter-lt');
 
@@ -97,8 +98,7 @@ app.use((req, res, next) => {
   res.sendFile("index.html", { root: publicRoot })
 });
 */
-app.post('/api/login', (req, res)=>{
-	
+app.post('/api/login', (req, res)=>{ 
 	let {userEmail, userPassword} = req.body;
 	let userHashedpassword = getHashedPassword(userPassword); // convert password to hash
 	console.log("hash")
@@ -167,7 +167,7 @@ app.get('/api/cryptocurrencies', function(req, res){
 										
 			let currencyConverter = new CC({from:"USD", to:currency, amount:1});
 			
-			
+			   
 			currencyConverter.convert().then((response) => { //convert the crypto currency's price to the local currency of user
 								console.log("try currency converter "+currency)
 								console.log(response) //USD rate
@@ -179,8 +179,9 @@ app.get('/api/cryptocurrencies', function(req, res){
 										
 										if(cryptoC[1] === 'USD'){ //get prices of all crypto currencies in USD
 											
-											cryptoCurrencies.push({
-												cryptoCurrency: cryptoC[0], 
+											cryptoCurrencies.push({   
+												cryptoCurrency: nameOf(cryptoC[0]) + ' (' + cryptoC[0] +')', 
+												icon: cryptoC[0].toLowerCase(), 
 												price_24h:  rateUSD*data[index].price_24h || data[index].price_24h, //convert to local currency
 												volume_24h: data[index].volume_24h,
 												last_trade_price: rateUSD*data[index].last_trade_price || data[index].last_trade_price //convert to local currency
