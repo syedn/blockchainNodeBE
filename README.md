@@ -1,21 +1,18 @@
 # cryptoshowcasevue
 
-> The crypto currency dashboard.
+> The crypto currency backend dashboard.
 
 ## Build Setup
 
 ``` bash
 # install dependencies
-npm install
+1. npm install
 
-# serve with hot reload at localhost:8080
-npm run dev
+2. npm link ../blockchainnodejclient  (copy from: @thisrepo)
 
-# build for production with minification
-npm run build
+3. create dist for frontend app and paste the link in app.js
 
-# build for production and view the bundle analyzer report
-npm run build --report
-```
+3. nodemon app.js
 
-details of the project here
+4. The app will run on the server
+ 
