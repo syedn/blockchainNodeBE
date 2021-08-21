@@ -174,8 +174,8 @@ app.get('/api/cryptocurrencies', function(req, res){
 										
 										if(cryptoC[1] === 'USD'){ //get prices of all crypto currencies in USD
 											
-											cryptoCurrencies.push({   
-												cryptoCurrency: nameOf(cryptoC[0]) + ' (' + cryptoC[0] +')', 
+											cryptoCurrencies.push({
+												cryptoCurrency: (nameOf(cryptoC[0]) !== undefined) ? nameOf(cryptoC[0]) + ' (' + cryptoC[0] +')' : cryptoC[0], 
 												icon: cryptoC[0].toLowerCase(), 
 												price_24h:  rateUSD*data[index].price_24h || data[index].price_24h, //convert to local currency
 												volume_24h: data[index].volume_24h,
