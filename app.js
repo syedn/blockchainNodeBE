@@ -11,8 +11,6 @@ var BlockchainComExchangeRestApi = require('blockchain_com_exchange_rest_api');
 var { nameOf, nameM, name } = require('crypto-symbol');
 
 const CC = require('currency-converter-lt');
-
-//var swap = require('node-currency-swap');
  
           
 //initialize variables
@@ -94,15 +92,14 @@ app.use((req, res, next) => {
 
 
 // use in production 
-/*app.get("/", (req, res, next) => {
+app.get("/", (req, res, next) => {
   res.sendFile("index.html", { root: publicRoot })
 });
-*/
+
 app.post('/api/login', (req, res)=>{ 
 	let {userEmail, userPassword} = req.body;
 	let userHashedpassword = getHashedPassword(userPassword); // convert password to hash
-	console.log("hash")
-	console.log(userHashedpassword)
+
 	
 	let user = users.find(u => u.userEmail === userEmail && u.userPassword === userHashedpassword); 
 	
@@ -169,8 +166,6 @@ app.get('/api/cryptocurrencies', function(req, res){
 			
 			   
 			currencyConverter.convert().then((response) => { //convert the crypto currency's price to the local currency of user
-								console.log("try currency converter "+currency)
-								console.log(response) //USD rate
 								let rateUSD = response; 
 								
 								data.forEach(function(item, index){
@@ -190,7 +185,6 @@ app.get('/api/cryptocurrencies', function(req, res){
 										}   
 									} ); 
 									
-									console.log("after converter")
 									res.send({cryptoData: cryptoCurrencies});  
 							});
 							
