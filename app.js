@@ -40,8 +40,7 @@ var users = [
 }
 ];
     
-
-//@remove        
+       
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
@@ -85,8 +84,7 @@ const authMiddleware = (req, res, next) => {
 //Get the user's 'authToken' and 'UserInfo' token from cookies and inject in the request 
 app.use((req, res, next) => {
     req.authToken = req.cookies['AuthToken'];
-    req.user = req.cookies['UserInfo'];
-
+	req.user = req.cookies['UserInfo'];
     next();
 });
 
@@ -108,7 +106,7 @@ app.post('/api/login', (req, res)=>{
 		
 		// Setting the AuthToken and UserInfo in cookies
         res.cookie('AuthToken', authToken);
-        res.cookie('UserInfo', user);
+        res.cookie('UserInfo', {userEmail: user.userEmail, country: user.country, name: user.name});
 		res.send("Logged in");
 	}
 	else{
@@ -130,7 +128,7 @@ app.get('/api/logout', function(req, res) {
 
 app.get("/api/user", authMiddleware, (req, res) => {
 	
-	let user = users.find(u => u.id === req.user.id);
+	let user = users.find(u => u.userEmail === req.user.userEmail);
 	 
 	let {currency, currencySymbol} = countryLocalCurrency(user.country); 
 	 
@@ -174,7 +172,7 @@ app.get('/api/cryptocurrencies', function(req, res){
 										
 										if(cryptoC[1] === 'USD'){ //get prices of all crypto currencies in USD
 											
-											cryptoCurrencies.push({
+											cryptoCurrencies.push({   
 												cryptoCurrency: (nameOf(cryptoC[0]) !== undefined) ? nameOf(cryptoC[0]) + ' (' + cryptoC[0] +')' : cryptoC[0], 
 												icon: cryptoC[0].toLowerCase(), 
 												price_24h:  rateUSD*data[index].price_24h || data[index].price_24h, //convert to local currency
